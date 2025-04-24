@@ -1,0 +1,124 @@
+name: Build
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      Build_toolchain:
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  REPO_URL: https://github.com/MeIsReallyBa/padavan-4.4
+  REPO_BRANCH: main
+  UPLOAD_RELEASE: true
+  TNAME: JDCLOUD-RE-SP-01B
+  CONFIG_FILE: JDCLOUD-RE-SP-01B.config
+  DIY_SH: diy.sh
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions:
+      actions: write
+      contents: write
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Prepare environment
+      run: |
+       sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+       sudo -E apt-get -qq update
+       sudo -E apt-get -qq install unzip libtool-bin curl cmake gperf gawk flex bison nano xxd \
+       fakeroot kmod cpio git python3-docutils gettext automake autopoint \
+       texinfo build-essential help2man pkg-config zlib1g-dev libgmp3-dev \
+       libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget libc-dev-bin bc
+       sudo -E apt-get -qq autoremove --purge
+       sudo -E apt-get -qq clean
+       sudo timedatectl set-timezone "Asia/Shanghai"
+
+    - name: Clone source
+      if: (!cancelled())
+      run: |
+       df -hT $PWD
+       git clone --depth=1 $REPO_URL -b $REPO_BRANCH padavan
+       ln -sf /workdir/padavan $GITHUB_WORKSPACE/padavan
+
+    - name: Load custom configuration
+      run: |
+        mv -f $CONFIG_FILE padavan/trunk/configs/templates/$TNAME.config
+        chmod +x $DIY_SH
+        cd padavan
+        $GITHUB_WORKSPACE/$DIY_SH
+
+    - name: Download toolchain
+      if: github.event.inputs.Build_toolchain == 'false' && !cancelled()
+      run: |
+       cd padavan/toolchain-mipsel
+       ./dl_toolchain.sh
+
+    - name: Build toolchain
+      if: github.event.inputs.Build_toolchain == 'true' && !cancelled()
+      run: |
+       cd padavan/toolchain-mipsel
+       ./build_toolchain
+
+    - name: Compile the firmware
+      if: (!cancelled())
+      id: compile
+      run: |
+        cd padavan/trunk
+        cp -f configs/templates/$TNAME.config .config
+        fakeroot ./build_firmware_modify $TNAME 0 
+        echo "status=success" >> $GITHUB_OUTPUT
+        echo "FILE_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+
+    - name: Upload firmware directory
+      uses: actions/upload-artifact@main
+      if: steps.compile.outputs.status == 'success' && !cancelled()
+      with:
+        name: Padavan_firmware_${{ env.TNAME }}_${{ env.FILE_DATE }}
+        path: padavan/trunk/images
+
+    - name: Generate release tag
+      id: tag
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true' && !cancelled()
+      run: |
+       echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+       touch release.txt
+       echo "## MeIsReallyBa Padavan-4.4 Release $(date +"%Y.%m.%d-%H:%M")" >> release.txt
+       echo "- Source code:" >> release.txt
+       echo "  ${{ env.REPO_URL }}/tree/${{ env.REPO_BRANCH }}" >> release.txt
+       echo "- ${{ env.TNAME }}.trx" >> release.txt
+       echo "  md5sum: $(md5sum padavan/trunk/images/*.trx | cut -d" " -f1)" >> release.txt
+       echo "  sha256: $(sha256sum padavan/trunk/images/*.trx | cut -d" " -f1)" >> release.txt
+       echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Upload firmware to release
+      uses: softprops/action-gh-release@v2
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+       GITHUB_TOKEN: ${{ github.token }}
+      with:
+       tag_name: ${{ steps.tag.outputs.release_tag }}
+       body_path: release.txt
+       files: |
+        padavan/trunk/images/*.trx
+        padavan/trunk/configs/templates/${{ env.TNAME }}.config
+
+    - name: Remove old Releases and Workflows
+      uses: ophub/delete-releases-workflows@main
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      with:
+        delete_releases: true
+        releases_keep_latest: 5
+        delete_tags: true
+        delete_workflows: true
+        workflows_keep_day: 10
+        gh_token: ${{ github.token }}
