@@ -23,13 +23,6 @@ Replace_package="xray-core xray-plugin v2ray-core v2ray-plugin hysteria ipt2sock
 rm -rfv feeds/packages/net/shadowsocks-rust
 git clone https://github.com/sbwml/openwrt_helloworld openwrt_helloworld
 cp -rv openwrt_helloworld/shadowsocks-rust feeds/packages/net/shadowsocks-rust
-rm -rfv openwrt_helloworld
+rm -rf openwrt_helloworld
 
 sed -i 's/192.168.1.1/192.168.5.1/g' package/base-files/files/bin/config_generate
-
-# Remove upx commands
-makefile_file="$({ find package|grep Makefile |sed "/Makefile./d"; } 2>"/dev/null")"
-for a in ${makefile_file}
-do
-	[ -n "$(grep "upx" "$a")" ] && sed -i "/upx/d" "$a"
-done
