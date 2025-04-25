@@ -193,9 +193,6 @@ jobs:
         echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
         touch release.txt
         echo "## padavanonly/immortalwrt-18.06-k5.10 JDCloud_RE-SP-01B Compile $(date +"%Y.%m.%d-%H:%M")" >> release.txt
-        echo "- initramfs-factory" >> release.txt
-        echo "  md5: $(md5sum ${{ env.FIRMWARE }}/*factory* | cut -d" " -f1)" >> release.txt
-        echo "  sha256: $(grep ".*factory.*" ${{ env.FIRMWARE }}/sha256sums | grep -oE "\w{64}")" >> release.txt
         echo "- initramfs-kernel" >> release.txt
         echo "  md5: $(md5sum ${{ env.FIRMWARE }}/*kernel* | cut -d" " -f1)" >> release.txt
         echo "  sha256: $(grep ".*kernel.*" ${{ env.FIRMWARE }}/sha256sums | grep -oE "\w{64}")" >> release.txt
@@ -213,7 +210,6 @@ jobs:
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt
         files: |
-          ${{ env.FIRMWARE }}/*factory*
           ${{ env.FIRMWARE }}/*kernel*
           ${{ env.FIRMWARE }}/*sysupgrade*
           ${{ env.FIRMWARE }}/profiles.json
