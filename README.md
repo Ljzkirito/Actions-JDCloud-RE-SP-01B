@@ -1,4 +1,4 @@
-# Github Actions Padavan JDCloud_RE-SP-01B
+# Github Actions Padavan RM2100
 
 - Padavan源码是[MeIsReallyBa/padavan-4.4](https://github.com/MeIsReallyBa/padavan-4.4)，[恩山介绍](https://www.right.com.cn/FORUM/thread-8287691-1-1.html)。
 - Github Actions参考自[P3TERX/Actions-OpenWrt](https://github.com/P3TERX/Actions-OpenWrt)&[hanwckf/scut_padavan_build](https://github.com/hanwckf/scut_padavan_build)。
