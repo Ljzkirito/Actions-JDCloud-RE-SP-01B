@@ -1,8 +1,8 @@
 # Github Actions padavanonly/immortalwrt-18.06-k5.10 
 
-- ImmortalWrt源码是[padavanonly/immortalwrt](https://github.com/padavanonly/immortalwrt/tree/master)，openwrt-24.10，[恩山介绍](https://www.right.com.cn/FORUM/forum.php?mod=viewthread&tid=8235037)仅用作编译测试。
+- ImmortalWrt源码是[immortalwrt](https://github.com/immortalwrt/immortalwrt)，openwrt-24.10。
 - Github Actions来自于[P3TERX/Actions-OpenWrt](https://github.com/P3TERX/Actions-OpenWrt)，[中文教程](https://p3terx.com/archives/build-openwrt-with-github-actions.html)。
-- 编译目标为JDCloud_RE-SP-01B，必须关闭op的flow offload，不然冲突导致hwnat失效。
+- 编译目标为JDCloud_RE-SP-01B。
 
 ## Config文件生成参考
 
@@ -14,7 +14,7 @@ sudo sed -i 's#http://security.ubuntu.com#https://mirrors.huaweicloud.com#' /etc
 sudo apt update
 sudo apt upgrade -y
 sudo apt-get -y install build-essential unzip libncurses-dev subversion
-git clone --depth=1 https://github.com/padavanonly/immortalwrt
+git clone --depth=1 https://github.com/immortalwrt/immortalwrt -b openwrt-24.10
 cd immortalwrt
 ./scripts/feeds update -a && ./scripts/feeds install -a
 make menuconfig
