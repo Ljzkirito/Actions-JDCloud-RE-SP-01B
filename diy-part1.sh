@@ -28,3 +28,7 @@ sed -i 's/ zram-swap//g' target/linux/ramips/Makefile
 sed -i 's/ luci-app-mwan3helper-chinaroute//g' target/linux/ramips/mt7621/target.mk
 # Remove luci-app-oaf
 sed -i 's/  luci-app-oaf//g' target/linux/ramips/mt7621/target.mk
+
+# Remove rax0 apclix0 (No such device)
+sed -i '/rax0/d' target/linux/ramips/mt7621/base-files/etc/init.d/set-irq-affinity
+sed -i '/apclix0/d' target/linux/ramips/mt7621/base-files/etc/init.d/set-irq-affinity
