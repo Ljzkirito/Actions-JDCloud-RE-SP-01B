@@ -2,7 +2,7 @@
 
 - ImmortalWrt源码是[padavanonly/immortalwrt](https://github.com/padavanonly/immortalwrt/tree/master)，openwrt-24.10，[恩山介绍](https://www.right.com.cn/FORUM/forum.php?mod=viewthread&tid=8235037)仅用作编译测试。
 - Github Actions来自于[P3TERX/Actions-OpenWrt](https://github.com/P3TERX/Actions-OpenWrt)，[中文教程](https://p3terx.com/archives/build-openwrt-with-github-actions.html)。
-- 编译目标为JDCloud_RE-SP-01B，必须关闭op的flow offload，不然冲突导致hwnat失效。
+- 编译目标为JDCloud_RE-SP-01B，Turbo ACC 网络加速设置不要动，否则hwnat失效，需重启。
 
 ## Config文件生成参考
 
