@@ -11,23 +11,17 @@
 #
 
 # golang 1.24.x
-rm -rfv feeds/packages/lang/golang
-git clone https://github.com/sbwml/packages_lang_golang -b 24.x feeds/packages/lang/golang
+#rm -rfv feeds/packages/lang/golang
+#git clone https://github.com/sbwml/packages_lang_golang -b 24.x feeds/packages/lang/golang
 
 # Replace luci-theme-argon
 rm -rf feeds/luci/themes/luci-theme-argon
-git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git feeds/luci/themes/luci-theme-argon
-
-# Replace luci-app-ssr-plus & Depends
-Replace_package="xray-core xray-plugin v2ray-core v2ray-plugin shadowsocks-libev trojan hysteria ipt2socks microsocks redsocks2 chinadns-ng dns2socks dns2tcp dnsproxy mosdns naiveproxy simple-obfs tcping luci-app-ssr-plus"
-./scripts/feeds uninstall ${Replace_package}
-./scripts/feeds install -f -p helloworld ${Replace_package}
+git clone https://github.com/jerrykuku/luci-theme-argon.git feeds/luci/themes/luci-theme-argon
 
 # Replace shadowsocks-rust
-rm -rfv feeds/packages/net/shadowsocks-rust
 rm -rfv feeds/helloworld/shadowsocks-rust
 git clone https://github.com/sbwml/openwrt_helloworld openwrt_helloworld
-cp -rv openwrt_helloworld/shadowsocks-rust feeds/packages/net/shadowsocks-rust
+cp -rv openwrt_helloworld/shadowsocks-rust feeds/helloworld/shadowsocks-rust
 rm -rf openwrt_helloworld
 
 sed -i 's/192.168.1.1/192.168.5.1/g' package/base-files/files/bin/config_generate

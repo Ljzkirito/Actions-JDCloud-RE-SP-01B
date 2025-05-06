@@ -24,7 +24,7 @@ on:
           - 'false'
 
 env:
-  REPO_URL: https://github.com/padavanonly/immortalwrt
+  REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: seed.config
@@ -37,7 +37,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       actions: write
       contents: write
@@ -85,9 +85,13 @@ jobs:
       run: |
         sudo -E apt-get update -y
         sudo -E apt-get full-upgrade -y
-        sudo -E apt-get install -y build-essential clang flex bison g++ gawk \
-        gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev \
-        python3-distutils python3-setuptools rsync swig unzip zlib1g-dev file wget
+        sudo -E apt-get install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+        bzip2 ccache clang cmake cpio curl device-tree-compiler flex gawk gcc-multilib g++-multilib gettext \
+        genisoimage git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev \
+        libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev \
+        libreadline-dev libssl-dev libtool llvm lrzsz msmtp ninja-build p7zip p7zip-full patch pkgconf \
+        python3 python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion \
+        swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
         sudo -E apt-get -y autoremove --purge
         sudo -E apt-get -y clean
         sudo timedatectl set-timezone "$TZ"
@@ -101,8 +105,8 @@ jobs:
       working-directory: /workdir
       run: |
         df -hT $PWD
-        git clone $REPO_URL -b $REPO_BRANCH ImmortalWrt
-        ln -sf /workdir/ImmortalWrt $GITHUB_WORKSPACE/ImmortalWrt
+        git clone $REPO_URL -b $REPO_BRANCH lede
+        ln -sf /workdir/lede $GITHUB_WORKSPACE/lede
         # 利用挂载在 /mnt/ 的 66G 额外空间:
         #sudo mkdir -p -m 777 /mnt/ImmortalWrt/dl /mnt/ImmortalWrt/feeds /mnt/ImmortalWrt/build_dir
         #ln -s /mnt/ImmortalWrt/dl /workdir/ImmortalWrt/dl
@@ -117,33 +121,33 @@ jobs:
         ccache: 'false'
         clean: 'false'
         mixkey: 'ramips'
-        prefix: ${{ github.workspace }}/ImmortalWrt
+        prefix: ${{ github.workspace }}/lede
 
     - name: Load custom feeds (DIY_P1_SH)
       run: |
-        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF ImmortalWrt/feeds.conf.default
+        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF lede/feeds.conf.default
         chmod +x $DIY_P1_SH
-        cd ImmortalWrt
+        cd lede
         $GITHUB_WORKSPACE/$DIY_P1_SH
 
     - name: Update feeds
-      run: cd ImmortalWrt && ./scripts/feeds update -a
+      run: cd lede && ./scripts/feeds update -a
 
     - name: Install feeds
-      run: cd ImmortalWrt && ./scripts/feeds install -a
+      run: cd lede && ./scripts/feeds install -a
 
     - name: Load custom configuration (DIY_P2_SH)
       run: |
-        [ -e files ] && mv files ImmortalWrt/files
+        [ -e files ] && mv files lede/files
         chmod +x $DIY_P2_SH
-        cd ImmortalWrt
+        cd lede
         $GITHUB_WORKSPACE/$DIY_P2_SH
 
     - name: Download package
       id: package
       run: |
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE ImmortalWrt/.config
-        cd ImmortalWrt
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE lede/.config
+        cd lede
         make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
@@ -152,7 +156,7 @@ jobs:
     - name: Compile the firmware
       id: compile
       run: |
-        cd ImmortalWrt
+        cd lede
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j1 V=s
         echo "status=success" >> $GITHUB_OUTPUT
@@ -167,14 +171,14 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       with:
-        name: ImmortalWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        path: ImmortalWrt/bin
+        name: lede_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        path: lede/bin
 
     - name: Organize files
       id: organize
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
-        cd ImmortalWrt/bin/targets/*/*
+        cd lede/bin/targets/*/*
         rm -rf packages
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
@@ -183,7 +187,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ImmortalWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        name: lede_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
         path: ${{ env.FIRMWARE }}
 
     - name: Generate release tag
@@ -192,7 +196,7 @@ jobs:
       run: |
         echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
         touch release.txt
-        echo "## padavanonly/immortalwrt-18.06-k5.10 JDCloud_RE-SP-01B Compile $(date +"%Y.%m.%d-%H:%M")" >> release.txt
+        echo "## coolsnowwolf/lede JDCloud_RE-SP-01B Compile $(date +"%Y.%m.%d-%H:%M")" >> release.txt
         echo "- initramfs-kernel" >> release.txt
         echo "  md5: $(md5sum ${{ env.FIRMWARE }}/*kernel* | cut -d" " -f1)" >> release.txt
         echo "  sha256: $(grep ".*kernel.*" ${{ env.FIRMWARE }}/sha256sums | grep -oE "\w{64}")" >> release.txt
@@ -200,7 +204,7 @@ jobs:
         echo "  md5: $(md5sum ${{ env.FIRMWARE }}/*sysupgrade.bin | cut -d" " -f1)" >> release.txt
         echo "  sha256: $(grep ".*sysupgrade.bin" ${{ env.FIRMWARE }}/sha256sums | grep -oE "\w{64}")" >> release.txt
         echo "status=success" >> $GITHUB_OUTPUT
-        mv ImmortalWrt/.config ImmortalWrt/build.config
+        mv lede/.config lede/build.config
 
     - name: Upload firmware to release
       uses: softprops/action-gh-release@v2
@@ -213,7 +217,7 @@ jobs:
           ${{ env.FIRMWARE }}/*kernel*
           ${{ env.FIRMWARE }}/*sysupgrade*
           ${{ env.FIRMWARE }}/profiles.json
-          ImmortalWrt/build.config
+          lede/build.config
 
     - name: Remove old Releases and Workflows
       uses: ophub/delete-releases-workflows@main
